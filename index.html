@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paws & Preferences: Find Your Favourite Kitty</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .swipe-area {
+            position: relative;
+            height: 500px;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+
+        .card-stack {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .cat-card {
+            position: absolute;
+            width: 90%;
+            height: 90%;
+            left: 5%;
+            top: 5%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            cursor: grab;
+            transition: transform 0.3s ease;
+            user-select: none;
+        }
+
+        .cat-card.grabbing {
+            cursor: grabbing;
+        }
+
+        .cat-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 15px;
+            pointer-events: none;
+        }
+
+        .like-indicator, .dislike-indicator {
+            position: absolute;
+            top: 50px;
+            font-size: 60px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        .like-indicator {
+            right: 30px;
+            color: #4caf50;
+        }
+
+        .dislike-indicator {
+            left: 30px;
+            color: #f44336;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 30px;
+            background: white;
+        }
+
+        .btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-dislike {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-like {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: scale(1.1);
+        }
+
+        .counter {
+            text-align: center;
+            padding: 15px;
+            background: #f5f5f5;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .summary {
+            display: none;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .summary.active {
+            display: block;
+        }
+
+        .summary h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .summary .stats {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: #666;
+        }
+
+        .liked-cats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .liked-cat-thumb {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-restart {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-restart:hover {
+            transform: scale(1.05);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .no-cats-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                max-width: 100%;
+                border-radius: 0;
+            }
+
+            .swipe-area {
+                height: 60vh;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .liked-cats {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐱 Paws & Preferences</h1>
+            <p>Swipe right to like, left to dislike</p>
+        </div>
+
+        <div class="counter">
+            <span id="counter">Loading cats...</span>
+        </div>
+
+        <div class="swipe-area" id="swipeArea">
+            <div class="card-stack" id="cardStack">
+                <div class="loading">Loading adorable cats...</div>
+            </div>
+        </div>
+
+        <div class="controls" id="controls" style="display: none;">
+            <button class="btn btn-dislike" id="btnDislike">✕</button>
+            <button class="btn btn-like" id="btnLike">♥</button>
+        </div>
+
+        <div class="summary" id="summary">
+            <h2>Your Results! 🎉</h2>
+            <div class="stats">
+                You liked <strong id="likedCount">0</strong> out of <strong id="totalCount">0</strong> cats!
+            </div>
+            <div id="likedCatsContainer"></div>
+            <button class="btn-restart" id="btnRestart">Start Over</button>
+        </div>
+    </div>
+
+    <script>
+        const CAT_COUNT = 15;
+        let cats = [];
+        let currentIndex = 0;
+        let likedCats = [];
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+        let currentCard = null;
+
+        // Generate random cat URLs from Cataas
+        function generateCatUrls() {
+            const urls = [];
+            for (let i = 0; i < CAT_COUNT; i++) {
+                // Using timestamp and random number to get different cats
+                urls.push(`https://cataas.com/cat?${Date.now()}_${i}`);
+            }
+            return urls;
+        }
+
+        // Preload images
+        function preloadImages(urls) {
+            return Promise.all(
+                urls.map(url => {
+                    return new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => resolve({ url, loaded: true });
+                        img.onerror = () => resolve({ url, loaded: false });
+                        img.src = url;
+                    });
+                })
+            );
+        }
+
+        // Initialize the app
+        async function init() {
+            const catUrls = generateCatUrls();
+            const loadedCats = await preloadImages(catUrls);
+            cats = loadedCats.filter(cat => cat.loaded).map(cat => cat.url);
+
+            if (cats.length === 0) {
+                document.getElementById('cardStack').innerHTML = 
+                    '<div class="no-cats-message">Failed to load cats. Please refresh the page.</div>';
+                return;
+            }
+
+            document.getElementById('controls').style.display = 'flex';
+            renderCards();
+            updateCounter();
+        }
+
+        // Render cat cards
+        function renderCards() {
+            const cardStack = document.getElementById('cardStack');
+            cardStack.innerHTML = '';
+
+            // Show next 3 cards for stack effect
+            for (let i = Math.min(currentIndex + 2, cats.length - 1); i >= currentIndex; i--) {
+                if (i < cats.length) {
+                    const card = createCard(cats[i], i);
+                    cardStack.appendChild(card);
+                }
+            }
+
+            currentCard = cardStack.lastElementChild;
+            if (currentCard) {
+                attachSwipeListeners(currentCard);
+            }
+        }
+
+        // Create a cat card
+        function createCard(catUrl, index) {
+            const card = document.createElement('div');
+            card.className = 'cat-card';
+            card.style.zIndex = cats.length - index;
+            
+            const scale = 1 - ((currentIndex - index) * 0.05);
+            const translateY = (currentIndex - index) * 10;
+            card.style.transform = `scale(${scale}) translateY(${translateY}px)`;
+
+            const img = document.createElement('img');
+            img.src = catUrl;
+            img.alt = 'Cat';
+
+            const likeIndicator = document.createElement('div');
+            likeIndicator.className = 'like-indicator';
+            likeIndicator.textContent = 'LIKE';
+
+            const dislikeIndicator = document.createElement('div');
+            dislikeIndicator.className = 'dislike-indicator';
+            dislikeIndicator.textContent = 'NOPE';
+
+            card.appendChild(img);
+            card.appendChild(likeIndicator);
+            card.appendChild(dislikeIndicator);
+
+            return card;
+        }
+
+        // Attach swipe listeners
+        function attachSwipeListeners(card) {
+            card.addEventListener('mousedown', handleStart);
+            card.addEventListener('touchstart', handleStart);
+            document.addEventListener('mousemove', handleMove);
+            document.addEventListener('touchmove', handleMove);
+            document.addEventListener('mouseup', handleEnd);
+            document.addEventListener('touchend', handleEnd);
+        }
+
+        function handleStart(e) {
+            if (e.target.closest('.cat-card') !== currentCard) return;
+            
+            isDragging = true;
+            currentCard.classList.add('grabbing');
+            startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+            currentX = startX;
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+            const deltaX = currentX - startX;
+            const rotation = deltaX * 0.1;
+
+            currentCard.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
+            currentCard.style.transition = 'none';
+
+            // Show indicators
+            const likeIndicator = currentCard.querySelector('.like-indicator');
+            const dislikeIndicator = currentCard.querySelector('.dislike-indicator');
+            
+            if (deltaX > 50) {
+                likeIndicator.style.opacity = Math.min(deltaX / 100, 1);
+                dislikeIndicator.style.opacity = 0;
+            } else if (deltaX < -50) {
+                dislikeIndicator.style.opacity = Math.min(Math.abs(deltaX) / 100, 1);
+                likeIndicator.style.opacity = 0;
+            } else {
+                likeIndicator.style.opacity = 0;
+                dislikeIndicator.style.opacity = 0;
+            }
+        }
+
+        function handleEnd() {
+            if (!isDragging) return;
+
+            isDragging = false;
+            currentCard.classList.remove('grabbing');
+
+            const deltaX = currentX - startX;
+            const threshold = 100;
+
+            if (Math.abs(deltaX) > threshold) {
+                // Swipe completed
+                const liked = deltaX > 0;
+                animateSwipe(liked);
+            } else {
+                // Return to center
+                currentCard.style.transform = '';
+                currentCard.style.transition = 'transform 0.3s ease';
+                currentCard.querySelector('.like-indicator').style.opacity = 0;
+                currentCard.querySelector('.dislike-indicator').style.opacity = 0;
+            }
+        }
+
+        function animateSwipe(liked) {
+            const direction = liked ? 1 : -1;
+            currentCard.style.transform = `translateX(${direction * 1000}px) rotate(${direction * 30}deg)`;
+            currentCard.style.transition = 'transform 0.5s ease';
+
+            if (liked) {
+                likedCats.push(cats[currentIndex]);
+            }
+
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex < cats.length) {
+                    renderCards();
+                    updateCounter();
+                } else {
+                    showSummary();
+                }
+            }, 500);
+        }
+
+        // Button handlers
+        document.getElementById('btnLike').addEventListener('click', () => {
+            if (currentCard) animateSwipe(true);
+        });
+
+        document.getElementById('btnDislike').addEventListener('click', () => {
+            if (currentCard) animateSwipe(false);
+        });
+
+        document.getElementById('btnRestart').addEventListener('click', () => {
+            currentIndex = 0;
+            likedCats = [];
+            document.getElementById('summary').classList.remove('active');
+            document.getElementById('swipeArea').style.display = 'block';
+            document.getElementById('controls').style.display = 'flex';
+            renderCards();
+            updateCounter();
+        });
+
+        function updateCounter() {
+            document.getElementById('counter').textContent = 
+                `Cat ${currentIndex + 1} of ${cats.length}`;
+        }
+
+        function showSummary() {
+            document.getElementById('swipeArea').style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('summary').classList.add('active');
+            document.getElementById('likedCount').textContent = likedCats.length;
+            document.getElementById('totalCount').textContent = cats.length;
+
+            const container = document.getElementById('likedCatsContainer');
+            if (likedCats.length > 0) {
+                container.innerHTML = '<h3 style="margin-bottom: 15px;">Your Favorite Cats:</h3>';
+                const grid = document.createElement('div');
+                grid.className = 'liked-cats';
+                likedCats.forEach(catUrl => {
+                    const img = document.createElement('img');
+                    img.src = catUrl;
+                    img.className = 'liked-cat-thumb';
+                    img.alt = 'Liked cat';
+                    grid.appendChild(img);
+                });
+                container.appendChild(grid);
+            } else {
+                container.innerHTML = '<p style="color: #999;">You didn\'t like any cats 😿</p>';
+            }
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
